@@ -62,11 +62,51 @@ describe('Channels API', function () {
         });
     });
 
+    it('tests that no new builder events after promotion failed due to auth', function (done) {
+      request.get('/depot/events')
+        .type('application/json')
+        .accept('application/json')
+        .expect(200)
+        .end(function (err, res) {
+          expect(res.body.range_start).to.equal(0);
+          expect(res.body.range_end).to.equal(1);
+          expect(res.body.total_count).to.equal(2);
+          expect(res.body.data.length).to.equal(2);
+          expect(res.body.data[0].operation).to.equal('Demote');
+          expect(res.body.data[0].origin).to.equal('neurosis');
+          expect(res.body.data[0].channel).to.equal('stable');
+          expect(res.body.data[1].operation).to.equal('Promote');
+          expect(res.body.data[1].origin).to.equal('neurosis');
+          expect(res.body.data[1].channel).to.equal('stable');
+          done(err);
+        });
+    });
+
     it('requires origin membership to promote a package', function (done) {
       request.put('/depot/channels/neurosis/foo/pkgs/testapp/0.1.3/20171205003213/promote')
         .set('Authorization', global.mystiqueBearer)
         .expect(401)
         .end(function (err, res) {
+          done(err);
+        });
+    });
+
+    it('tests that no new builder events after promotion failed due to origin membership', function (done) {
+      request.get('/depot/events')
+        .type('application/json')
+        .accept('application/json')
+        .expect(200)
+        .end(function (err, res) {
+          expect(res.body.range_start).to.equal(0);
+          expect(res.body.range_end).to.equal(1);
+          expect(res.body.total_count).to.equal(2);
+          expect(res.body.data.length).to.equal(2);
+          expect(res.body.data[0].operation).to.equal('Demote');
+          expect(res.body.data[0].origin).to.equal('neurosis');
+          expect(res.body.data[0].channel).to.equal('stable');
+          expect(res.body.data[1].operation).to.equal('Promote');
+          expect(res.body.data[1].origin).to.equal('neurosis');
+          expect(res.body.data[1].channel).to.equal('stable');
           done(err);
         });
     });
@@ -77,6 +117,28 @@ describe('Channels API', function () {
         .expect(200)
         .end(function (err, res) {
           expect(res.text).to.be.empty;
+          done(err);
+        });
+    });
+
+    it('tests builder events after putting a specified package into the specified channel', function (done) {
+      request.get('/depot/events')
+        .type('application/json')
+        .accept('application/json')
+        .expect(200)
+        .end(function (err, res) {
+          expect(res.body.range_start).to.equal(0);
+          expect(res.body.range_end).to.equal(2);
+          expect(res.body.total_count).to.equal(3);
+          expect(res.body.data[0].operation).to.equal('Promote');
+          expect(res.body.data[0].origin).to.equal('neurosis');
+          expect(res.body.data[0].channel).to.equal('foo');
+          expect(res.body.data[1].operation).to.equal('Demote');
+          expect(res.body.data[1].origin).to.equal('neurosis');
+          expect(res.body.data[1].channel).to.equal('stable');
+          expect(res.body.data[2].operation).to.equal('Promote');
+          expect(res.body.data[2].origin).to.equal('neurosis');
+          expect(res.body.data[2].channel).to.equal('stable');
           done(err);
         });
     });
