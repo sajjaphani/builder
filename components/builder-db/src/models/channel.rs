@@ -382,10 +382,67 @@ impl From<JobGroupTrigger> for PackageChannelTrigger {
     }
 }
 
-#[derive(DbEnum, Debug, Serialize, Deserialize)]
+#[derive(Clone, DbEnum, Debug, Serialize, Deserialize)]
 pub enum PackageChannelOperation {
     Promote,
     Demote,
+}
+
+pub struct ListEvents {
+    pub page:  i64,
+    pub limit: i64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Queryable)]
+pub struct AuditPackage {
+    pub package_ident:  BuilderPackageIdent,
+    pub channel:        String,
+    pub operation:      PackageChannelOperation,
+    pub trigger:        PackageChannelTrigger,
+    #[serde(with = "db_id_format")]
+    pub requester_id:   i64,
+    pub requester_name: String,
+    pub created_at:     Option<NaiveDateTime>,
+    pub origin:         String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct AuditPackageEvent {
+    pub operation:     PackageChannelOperation,
+    pub created_at:    Option<NaiveDateTime>,
+    pub origin:        String,
+    pub channel:       String,
+    pub package_ident: BuilderPackageIdent,
+}
+
+impl AuditPackage {
+    pub fn list(el: ListEvents, conn: &PgConnection) -> QueryResult<(Vec<AuditPackage>, i64)> {
+        Counter::DBCall.increment();
+        let start_time = Instant::now();
+
+        let query = audit_package::table.into_boxed();
+        let query = query.order(audit_package::created_at.desc())
+                         .paginate(el.page)
+                         .per_page(el.limit);
+
+        let (events, _): (std::vec::Vec<AuditPackage>, i64) = query.load_and_count_records(conn)?;
+
+        let duration_millis = start_time.elapsed().as_millis();
+        Histogram::DbCallTime.set(duration_millis as f64);
+
+        let new_count = events.len() as i64;
+        Ok((events, new_count))
+    }
+}
+
+impl Into<AuditPackageEvent> for AuditPackage {
+    fn into(self) -> AuditPackageEvent {
+        AuditPackageEvent { operation:     self.operation,
+                            created_at:    self.created_at,
+                            origin:        self.origin.clone(),
+                            channel:       self.channel.clone(),
+                            package_ident: self.package_ident, }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Insertable)]
