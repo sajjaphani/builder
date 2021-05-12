@@ -40,16 +40,16 @@ fn do_get_events(req: &HttpRequest,
                  pagination: &Query<Pagination>)
                  -> Result<(Vec<AuditPackageEvent>, i64)> {
     let opt_session_id = match authorize_session(req, None, None) {
-        Ok(session) => Some(session.get_id()),
+        Ok(session) => Some(session.get_id() as i64),
         Err(_) => None,
     };
-
     let (page, per_page) = helpers::extract_pagination_in_pages(pagination);
 
     let conn = req_state(req).db.get_conn().map_err(Error::DbError)?;
 
-    let el = ListEvents { page:  page as i64,
-                          limit: per_page as i64, };
+    let el = ListEvents { page:       page as i64,
+                          limit:      per_page as i64,
+                          account_id: opt_session_id, };
 
     match AuditPackage::list(el, &*conn).map_err(Error::DieselError) {
         Ok((packages, count)) => {

@@ -7,6 +7,7 @@ use diesel::{self,
                    sql},
              pg::{expression::dsl::any,
                   PgConnection},
+             prelude::*,
              result::QueryResult,
              ExpressionMethods,
              NullableExpressionMethods,
@@ -25,6 +26,7 @@ use crate::{models::{package::{BuilderPackageIdent,
                              audit_package_group},
                      channel::{origin_channel_packages,
                                origin_channels},
+                     member::origin_members,
                      origin::origins,
                      package::{origin_packages,
                                origin_packages_with_version_array}}};
@@ -365,7 +367,7 @@ impl Channel {
     }
 }
 
-#[derive(DbEnum, Debug, Clone, Serialize, Deserialize)]
+#[derive(DbEnum, Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum PackageChannelTrigger {
     Unknown,
     BuilderUi,
@@ -382,18 +384,19 @@ impl From<JobGroupTrigger> for PackageChannelTrigger {
     }
 }
 
-#[derive(Clone, DbEnum, Debug, Serialize, Deserialize)]
+#[derive(Clone, DbEnum, Debug, Serialize, Deserialize, PartialEq)]
 pub enum PackageChannelOperation {
     Promote,
     Demote,
 }
 
 pub struct ListEvents {
-    pub page:  i64,
-    pub limit: i64,
+    pub account_id: Option<i64>,
+    pub page:       i64,
+    pub limit:      i64,
 }
 
-#[derive(Debug, Serialize, Deserialize, Queryable)]
+#[derive(Debug, Serialize, Deserialize, Queryable, PartialEq)]
 pub struct AuditPackage {
     pub package_ident:  BuilderPackageIdent,
     pub channel:        String,
@@ -420,13 +423,33 @@ impl AuditPackage {
         Counter::DBCall.increment();
         let start_time = Instant::now();
 
-        let query = audit_package::table.into_boxed();
-        let query = query.order(audit_package::created_at.desc())
+        let mut query = audit_package::table.left_join(
+                origin_packages::table.on(origin_packages::ident.eq(audit_package::package_ident))
+            )
+            .select(audit_package::all_columns)
+            .distinct_on((audit_package::package_ident, audit_package::created_at))
+            .into_boxed();
+
+        if let Some(session_id) = el.account_id {
+            let origins = origin_members::table.select(origin_members::origin)
+                                               .filter(origin_members::account_id.eq(session_id));
+            query = query.filter(
+                origin_packages::visibility
+                    .eq(any(PackageVisibility::private()))
+                    .and(origin_packages::origin.eq_any(origins))
+                    .or(origin_packages::visibility.eq(PackageVisibility::Public))
+                    .or(audit_package::requester_id.eq(session_id)),
+            );
+        } else {
+            query = query.filter(origin_packages::visibility.eq(PackageVisibility::Public));
+        }
+
+        let query = query.order((audit_package::created_at.desc(),
+                                 audit_package::package_ident.desc()))
                          .paginate(el.page)
                          .per_page(el.limit);
-
-        let (events, _): (std::vec::Vec<AuditPackage>, i64) = query.load_and_count_records(conn)?;
-
+        let (mut events, _): (std::vec::Vec<AuditPackage>, i64) =
+            query.load_and_count_records(conn)?;
         let duration_millis = start_time.elapsed().as_millis();
         Histogram::DbCallTime.set(duration_millis as f64);
 
