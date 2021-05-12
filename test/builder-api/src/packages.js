@@ -871,6 +871,7 @@ describe('Working with packages', function () {
         });
     });
 
+    // TODO supposed to be empty, need to revisit 
     it('tests the builder events after demoting a package', function (done) {
       request.get('/depot/events')
         .type('application/json')
