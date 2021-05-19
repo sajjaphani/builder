@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2017 Chef Software Inc. and/or applicable contributors
+// Copyright (c) 2016-2021 Chef Software Inc. and/or applicable contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 
 import { List, Record } from 'immutable';
 import { BehaviorSubject } from 'rxjs';
+
 import { Origin } from './records/Origin';
 import { Package } from './records/Package';
 import { Project } from './records/Project';
@@ -259,5 +260,18 @@ export default Record({
         })()
       })()
     })()
-  })()
+  })(),
+  events: Record({
+    visible: List(),
+    nextRange: 0,
+    perPage: 50,
+    totalCount: 0,
+    ui: Record({
+      visible: Record({
+        errorMessage: undefined,
+        exists: false,
+        loading: true,
+      })(),
+    })(),
+  })(),
 })();

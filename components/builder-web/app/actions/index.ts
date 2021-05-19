@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2017 Chef Software Inc. and/or applicable contributors
+// Copyright (c) 2016-2021 Chef Software Inc. and/or applicable contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -242,6 +242,14 @@ export {
   TOGGLE_USER_NAV_MENU,
   toggleUserNavMenu
 } from './users';
+
+export {
+  CLEAR_EVENTS,
+  SET_VISIBLE_EVENTS,
+  SET_EVENTS_TOTAL_COUNT,
+  SET_EVENTS_NEXT_RANGE,
+  fetchEvents
+} from './events';
 
 // Used by redux-reset to reset the app state
 export const RESET = 'RESET';
