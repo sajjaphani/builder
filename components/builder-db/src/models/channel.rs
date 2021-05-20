@@ -448,13 +448,12 @@ impl AuditPackage {
                                  audit_package::package_ident.desc()))
                          .paginate(el.page)
                          .per_page(el.limit);
-        let (events, _): (std::vec::Vec<AuditPackage>, i64) =
+        let (events, total_count): (std::vec::Vec<AuditPackage>, i64) =
             query.load_and_count_records(conn)?;
         let duration_millis = start_time.elapsed().as_millis();
         Histogram::DbCallTime.set(duration_millis as f64);
 
-        let new_count = events.len() as i64;
-        Ok((events, new_count))
+        Ok((events, total_count))
     }
 }
 
