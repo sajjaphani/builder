@@ -7,7 +7,7 @@
       <h4>Package Ident</h4>
       <h4 class="last-item">Created</h4>
     </li>
-    <li class="none" *ngIf="!events || events.size === 0">
+    <li class="none" *ngIf="noEvents">
       <span>No events found.</span>
     </li>
     <li class="item" *ngFor="let event of events" (click)="onClick(event)">
