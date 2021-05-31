@@ -7,7 +7,8 @@ use crate::{db::models::channel::{AuditPackage,
                      framework::headers,
                      helpers::{self,
                                req_state,
-                               Pagination}}};
+                               Pagination,
+                               ToChannel}}};
 use actix_web::{http,
                 web::{self,
                       Query,
@@ -26,8 +27,11 @@ impl Events {
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn get_events(req: HttpRequest, pagination: Query<Pagination>) -> HttpResponse {
-    match do_get_events(&req, &pagination) {
+fn get_events(req: HttpRequest,
+              pagination: Query<Pagination>, 
+              channel: Query<ToChannel>)
+              -> HttpResponse {
+    match do_get_events(&req, &pagination, &channel) {
         Ok((events, count)) => postprocess_event_list(&req, &events, count, &pagination),
         Err(err) => {
             debug!("{}", err);
@@ -37,7 +41,8 @@ fn get_events(req: HttpRequest, pagination: Query<Pagination>) -> HttpResponse {
 }
 
 fn do_get_events(req: &HttpRequest,
-                 pagination: &Query<Pagination>)
+                 pagination: &Query<Pagination>,
+                 channel: &Query<ToChannel>)
                  -> Result<(Vec<AuditPackageEvent>, i64)> {
     let opt_session_id = match authorize_session(req, None, None) {
         Ok(session) => Some(session.get_id() as i64),
@@ -49,8 +54,8 @@ fn do_get_events(req: &HttpRequest,
 
     let el = ListEvents { page:       page as i64,
                           limit:      per_page as i64,
-                          account_id: opt_session_id, };
-
+                          account_id: opt_session_id,
+                          channel:    channel.channel.trim().to_string(), };
     match AuditPackage::list(el, &*conn).map_err(Error::DieselError) {
         Ok((packages, count)) => {
             let pkg_events: Vec<AuditPackageEvent> =

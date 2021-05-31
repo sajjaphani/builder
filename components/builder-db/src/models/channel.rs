@@ -394,6 +394,7 @@ pub struct ListEvents {
     pub account_id: Option<i64>,
     pub page:       i64,
     pub limit:      i64,
+    pub channel:    String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, PartialEq)]
@@ -442,6 +443,10 @@ impl AuditPackage {
             );
         } else {
             query = query.filter(origin_packages::visibility.eq(PackageVisibility::Public));
+        }
+
+        if !el.channel.is_empty() {
+            query = query.filter(audit_package::channel.eq(el.channel));
         }
 
         let query = query.order((audit_package::created_at.desc(),
