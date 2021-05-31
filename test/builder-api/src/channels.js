@@ -125,6 +125,35 @@ describe('Channels API', function () {
         });
     });
 
+    it('tests builder events after putting a specified package into the specified channel, channel name:foo', function (done) {
+      request.get('/depot/events?channel=foo')
+        .type('application/json')
+        .accept('application/json')
+        .expect(200)
+        .end(function (err, res) {
+          expect(res.body.range_start).to.equal(0);
+          expect(res.body.range_end).to.equal(0);
+          expect(res.body.total_count).to.equal(1);
+          expect(res.body.data[0].operation).to.equal('Promote');
+          expect(res.body.data[0].origin).to.equal('neurosis');
+          expect(res.body.data[0].channel).to.equal('foo');
+          done(err);
+        });
+    });
+
+    it('tests builder events after putting a specified package into the specified channel, channel name: stable', function (done) {
+      request.get('/depot/events?channel=stable')
+        .type('application/json')
+        .accept('application/json')
+        .expect(200)
+        .end(function (err, res) {
+          expect(res.body.range_start).to.equal(0);
+          expect(res.body.range_end).to.equal(0);
+          expect(res.body.total_count).to.equal(0);
+          done(err);
+        });
+    });
+
     it('should ignore packages promoted to a channel where the package already exists', function (done) {
       request.put('/depot/channels/neurosis/foo/pkgs/testapp/0.1.3/20171205003213/promote')
         .set('Authorization', global.boboBearer)
