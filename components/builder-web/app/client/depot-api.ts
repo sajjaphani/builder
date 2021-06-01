@@ -282,7 +282,7 @@ export function submitJob(origin: string, pkg: string, target: string, token: st
 }
 
 export function getEvents(nextRange: number = 0) {
-  let url = `${urlPrefix}/depot/events` + `?range=${nextRange}`;
+  let url = `${urlPrefix}/depot/events` + `?range=${nextRange}&channel=stable`;
 
   return new Promise((resolve, reject) => {
     fetch(url, opts())
