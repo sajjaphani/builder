@@ -9,12 +9,15 @@ use crate::{db::models::channel::{AuditPackage,
                                req_state,
                                Pagination,
                                ToChannel}}};
-use actix_web::{http,
+use actix_web::{http::{self,
+                       HeaderMap},
                 web::{self,
                       Query,
                       ServiceConfig},
                 HttpRequest,
                 HttpResponse};
+use builder_core::http_client::{HttpClient,
+                                USER_AGENT_BLDR};
 
 pub struct Events {}
 
@@ -27,10 +30,15 @@ impl Events {
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn get_events(req: HttpRequest,
-              pagination: Query<Pagination>, 
-              channel: Query<ToChannel>)
-              -> HttpResponse {
+async fn get_events(req: HttpRequest,
+                    pagination: Query<Pagination>,
+                    channel: Query<ToChannel>)
+                    -> HttpResponse {
+    let headers = req.headers();
+    if check_request_is_from_on_prem(headers) {
+        return get_events_from_saas_builder(headers).await;
+    }
+
     match do_get_events(&req, &pagination, &channel) {
         Ok((events, count)) => postprocess_event_list(&req, &events, count, &pagination),
         Err(err) => {
@@ -94,4 +102,60 @@ pub fn postprocess_event_list(_req: &HttpRequest,
     response.header(http::header::CONTENT_TYPE, headers::APPLICATION_JSON)
             .header(http::header::CACHE_CONTROL, headers::NO_CACHE)
             .body(body)
+}
+
+fn check_request_is_from_on_prem(headers: &HeaderMap) -> bool {
+    if let Some(ref referer) = headers.get(http::header::HOST) {
+        if let Ok(s) = referer.to_str() {
+            if s.contains("habitat.sh") {
+                return false;
+            }
+        }
+    }
+
+    true
+}
+
+// Invoke the REST API on the SaaS builder
+async fn get_events_from_saas_builder(map: &HeaderMap) -> HttpResponse {
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert(USER_AGENT_BLDR.0.clone(), USER_AGENT_BLDR.1.clone());
+    if map.contains_key(http::header::AUTHORIZATION) {
+        headers.insert(http::header::AUTHORIZATION,
+                       map.get(http::header::AUTHORIZATION).unwrap().clone());
+    }
+
+    let http_client = match HttpClient::new("https://bldr.acceptance.habitat.sh", headers) {
+        Ok(client) => client,
+        Err(err) => {
+            debug!("HttpClient Error: {:?}", err);
+            return HttpResponse::InternalServerError().body(err.to_string());
+        }
+    };
+
+    match http_client.get("https://bldr.acceptance.habitat.sh/v1/depot/events?range=0")
+                     .send()
+                     .await
+                     .map_err(Error::BuilderCore)
+    {
+        Ok(response) => {
+            match response.text().await {
+                Ok(body) => {
+                    let mut http_response = HttpResponse::Ok();
+
+                    http_response.header(http::header::CONTENT_TYPE, headers::APPLICATION_JSON)
+                                 .header(http::header::CACHE_CONTROL, headers::NO_CACHE)
+                                 .body(body)
+                }
+                Err(err) => {
+                    debug!("Error getting response text: {:?}", err);
+                    HttpResponse::InternalServerError().body(err.to_string())
+                }
+            }
+        }
+        Err(err) => {
+            debug!("Error sending request: {:?}", err);
+            HttpResponse::InternalServerError().body(err.to_string())
+        }
+    }
 }
