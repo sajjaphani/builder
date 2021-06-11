@@ -136,7 +136,7 @@ async fn get_events_from_saas_builder(map: &HeaderMap) -> HttpResponse {
     match http_client.get("https://bldr.acceptance.habitat.sh/v1/depot/events?range=0")
                      .send()
                      .await
-                     .map_err(Error::BuilderCore)
+                     .map_err(Error::HttpClient)
     {
         Ok(response) => {
             match response.text().await {
