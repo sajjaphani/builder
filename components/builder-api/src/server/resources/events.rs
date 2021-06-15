@@ -8,16 +8,19 @@ use crate::{db::models::channel::{AuditPackage,
                      helpers::{self,
                                req_state,
                                Pagination,
-                               ToChannel}}};
+                               ToChannel},
+                     AppState}};
 use actix_web::{http::{self,
                        HeaderMap},
                 web::{self,
+                      Data,
                       Query,
                       ServiceConfig},
                 HttpRequest,
                 HttpResponse};
 use builder_core::http_client::{HttpClient,
                                 USER_AGENT_BLDR};
+use url::Url;
 
 pub struct Events {}
 
@@ -47,15 +50,33 @@ async fn get_events(req: HttpRequest,
 #[allow(clippy::needless_pass_by_value)]
 async fn get_events_from_saas(req: HttpRequest,
                               pagination: Query<Pagination>,
-                              channel: Query<ToChannel>)
+                              channel: Query<ToChannel>,
+                              state: Data<AppState>)
                               -> HttpResponse {
+    let bldr_url = &state.config.api.bldr_url;
+    let bldr_host = match Url::parse(bldr_url) {
+        Ok(parsed_url) => {
+            match parsed_url.host_str() {
+                Some(host) => host.to_string(),
+                None => {
+                    debug!("Failed to extract host from builder url");
+                    return HttpResponse::InternalServerError().body("Failed to get bldr url".to_string());
+                }
+            }
+        }
+        Err(err) => {
+            debug!("Builder url parse error: {:?}", err);
+            return HttpResponse::InternalServerError().body("Failed to get bldr url".to_string());
+        }
+    };
+
     let headers = req.headers();
-    if check_request_is_from_on_prem(headers) {
-        return get_events_from_saas_builder(headers).await;
+    if check_request_is_from_on_prem(headers, &bldr_host) {
+        return get_events_from_saas_builder(headers, bldr_url).await;
     }
 
     // Request is not from on-prem instance
-    get_events(&req, &pagination, &channel)
+    get_events(req, pagination, channel).await
 }
 
 fn do_get_events(req: &HttpRequest,
@@ -114,10 +135,10 @@ pub fn postprocess_event_list(_req: &HttpRequest,
             .body(body)
 }
 
-fn check_request_is_from_on_prem(headers: &HeaderMap) -> bool {
+fn check_request_is_from_on_prem(headers: &HeaderMap, bldr_host: &str) -> bool {
     if let Some(ref referer) = headers.get(http::header::HOST) {
         if let Ok(s) = referer.to_str() {
-            if s.contains("habitat.sh") {
+            if s.contains(bldr_host) {
                 return false;
             }
         }
@@ -127,7 +148,7 @@ fn check_request_is_from_on_prem(headers: &HeaderMap) -> bool {
 }
 
 // Invoke the REST API on the SaaS builder
-async fn get_events_from_saas_builder(map: &HeaderMap) -> HttpResponse {
+async fn get_events_from_saas_builder(map: &HeaderMap, bldr_url: &str) -> HttpResponse {
     let mut headers = reqwest::header::HeaderMap::new();
     headers.insert(USER_AGENT_BLDR.0.clone(), USER_AGENT_BLDR.1.clone());
     if map.contains_key(http::header::AUTHORIZATION) {
@@ -135,7 +156,7 @@ async fn get_events_from_saas_builder(map: &HeaderMap) -> HttpResponse {
                        map.get(http::header::AUTHORIZATION).unwrap().clone());
     }
 
-    let http_client = match HttpClient::new("https://bldr.acceptance.habitat.sh", headers) {
+    let http_client = match HttpClient::new(bldr_url, headers) {
         Ok(client) => client,
         Err(err) => {
             debug!("HttpClient Error: {:?}", err);
@@ -143,7 +164,8 @@ async fn get_events_from_saas_builder(map: &HeaderMap) -> HttpResponse {
         }
     };
 
-    match http_client.get("https://bldr.acceptance.habitat.sh/v1/depot/events?range=0")
+    let url = format!("{}/v1/depot/events?range=0&channel=stable", bldr_url);
+    match http_client.get(&url)
                      .send()
                      .await
                      .map_err(Error::HttpClient)
