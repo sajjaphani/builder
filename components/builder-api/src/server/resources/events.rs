@@ -25,7 +25,8 @@ impl Events {
     // Route registration
     //
     pub fn register(cfg: &mut ServiceConfig) {
-        cfg.route("/depot/events", web::get().to(get_events));
+        cfg.route("/depot/events", web::get().to(get_events))
+           .route("/depot/events/saas", web::get().to(get_events_from_saas));
     }
 }
 
@@ -34,11 +35,6 @@ async fn get_events(req: HttpRequest,
                     pagination: Query<Pagination>,
                     channel: Query<ToChannel>)
                     -> HttpResponse {
-    let headers = req.headers();
-    if check_request_is_from_on_prem(headers) {
-        return get_events_from_saas_builder(headers).await;
-    }
-
     match do_get_events(&req, &pagination, &channel) {
         Ok((events, count)) => postprocess_event_list(&req, &events, count, &pagination),
         Err(err) => {
@@ -46,6 +42,20 @@ async fn get_events(req: HttpRequest,
             err.into()
         }
     }
+}
+
+#[allow(clippy::needless_pass_by_value)]
+async fn get_events_from_saas(req: HttpRequest,
+                              pagination: Query<Pagination>,
+                              channel: Query<ToChannel>)
+                              -> HttpResponse {
+    let headers = req.headers();
+    if check_request_is_from_on_prem(headers) {
+        return get_events_from_saas_builder(headers).await;
+    }
+
+    // Request is not from on-prem instance
+    get_events(&req, &pagination, &channel)
 }
 
 fn do_get_events(req: &HttpRequest,
