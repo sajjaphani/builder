@@ -94,7 +94,8 @@ export default Record({
       azure: false,
       docker: false
     })(),
-    builder: false
+    builder: false,
+    events: false
   })(),
   notifications: Record({
     all: List(),

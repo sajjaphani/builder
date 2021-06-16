@@ -66,5 +66,8 @@ habitatConfig({
     version: "",
 
     // The main website URL
-    www_url: "https://www.habitat.sh"
+    www_url: "https://www.habitat.sh",
+
+     // Enable/Disable builder events
+    enable_builder_events: false
 });

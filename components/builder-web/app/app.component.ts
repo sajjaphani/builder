@@ -121,6 +121,10 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.state.users.current.profile.name;
   }
 
+  get enabledEvents() {
+    return this.state.features.events;
+  }
+
   ngOnDestroy() {
     this.sub.unsubscribe();
   }

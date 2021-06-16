@@ -26,6 +26,7 @@ export class UserNavComponent {
   @Input() avatarUrl: string;
   @Input() signOut: Function;
   @Input() toggleUserNavMenu: Function;
+  @Input() enabledEvents: boolean;
 
   constructor(private element: ElementRef, private store: AppStore) { }
 

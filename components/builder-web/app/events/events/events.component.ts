@@ -35,6 +35,13 @@ export class EventsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    let state = this.store.getState();
+    // Ensure that the builder events are enabled
+    if (!state.features.events) {
+      this.router.navigate(['/pkgs']);
+      return;
+    }
+
     this.sub = this.route.params.subscribe(params => {
       this.title.setTitle(`Events | ${this.store.getState().app.name}`);
 

@@ -24,7 +24,8 @@ export default function builds(state = initialState['features'], action) {
         .setIn(['publishers', 'amazon'], !!config['enable_publisher_amazon'])
         .setIn(['publishers', 'azure'], !!config['enable_publisher_azure'])
         .setIn(['publishers', 'docker'], !!config['enable_publisher_docker'])
-        .set('builder', !!config['enable_builder']);
+        .set('builder', !!config['enable_builder'])
+        .set('events', !!config['enable_builder_events']);
 
     default:
       return state;
