@@ -2,21 +2,6 @@ use super::db_id_format;
 use chrono::NaiveDateTime;
 use std::time::Instant;
 
-use diesel::{self,
-             dsl::{count,
-                   sql},
-             pg::{expression::dsl::any,
-                  PgConnection},
-             prelude::*,
-             result::QueryResult,
-             ExpressionMethods,
-             NullableExpressionMethods,
-             PgArrayExpressionMethods,
-             QueryDsl,
-             RunQueryDsl,
-             Table,
-             TextExpressionMethods};
-
 use crate::{models::{package::{BuilderPackageIdent,
                                PackageVisibility,
                                PackageWithVersionArray},
@@ -37,6 +22,24 @@ use crate::{bldr_core::metrics::{CounterMetric,
                        ChannelIdent},
             metrics::{Counter,
                       Histogram}};
+
+use diesel::{self,
+             dsl::{count,
+                   now,
+                   sql,
+                   IntervalDsl},
+             pg::{expression::dsl::any,
+                  PgConnection},
+             prelude::*,
+             result::QueryResult,
+             sql_types::Timestamptz,
+             ExpressionMethods,
+             NullableExpressionMethods,
+             PgArrayExpressionMethods,
+             QueryDsl,
+             RunQueryDsl,
+             Table,
+             TextExpressionMethods};
 
 #[derive(AsExpression, Debug, Serialize, Deserialize, Queryable)]
 pub struct Channel {
@@ -391,10 +394,11 @@ pub enum PackageChannelOperation {
 }
 
 pub struct ListEvents {
-    pub account_id: Option<i64>,
-    pub page:       i64,
-    pub limit:      i64,
-    pub channel:    String,
+    pub account_id:  Option<i64>,
+    pub page:        i64,
+    pub limit:       i64,
+    pub channel:     String,
+    pub last_n_days: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, PartialEq)]
@@ -443,6 +447,12 @@ impl AuditPackage {
             );
         } else {
             query = query.filter(origin_packages::visibility.eq(PackageVisibility::Public));
+        }
+
+        if el.last_n_days > 0 {
+            query =
+                query.filter(audit_package::created_at.gt((now.into_sql::<Timestamptz>()
+                                                           - el.last_n_days.days()).nullable()));
         }
 
         if !el.channel.is_empty() {
@@ -527,6 +537,7 @@ pub struct OriginChannelPromote {
     pub origin:  String,
     pub channel: ChannelIdent,
 }
+
 pub struct OriginChannelDemote {
     pub ident:   BuilderPackageIdent,
     pub target:  PackageTarget,

@@ -51,6 +51,12 @@ pub struct ToChannel {
     pub channel: String,
 }
 
+#[derive(Deserialize)]
+pub struct LastNDays {
+    #[serde(default)]
+    pub last_n_days: isize,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Role {
     #[serde(default)]
