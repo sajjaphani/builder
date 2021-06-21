@@ -69,5 +69,9 @@ habitatConfig({
     www_url: "https://www.habitat.sh",
 
      // Enable/Disable builder events
-    enable_builder_events: false
+    enable_builder_events: false,
+
+     // Enable/Disable builder events from SaaS
+     // The 'enable_builder_events' property also needs to be set to enable SaaS events.
+     enable_builder_events_saas: false
 });

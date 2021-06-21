@@ -311,3 +311,34 @@ export function getEvents(nextRange: number = 0) {
       .catch(error => handleError(error, reject));
   });
 }
+
+export function getSaasEvents(nextRange: number = 0, daysLimit) {
+  let url = `${urlPrefix}/depot/events/saas` + `?range=${nextRange}&channel=stable&last_n_days=${daysLimit}`;
+
+  return new Promise((resolve, reject) => {
+    fetch(url, opts())
+      .then(response => handleUnauthorized(response, reject))
+      .then(response => {
+        if (response.status >= 400) {
+          reject(new Error(response.statusText));
+        } else {
+          response.json().then(resultsObj => {
+            let results;
+
+            const endRange = parseInt(resultsObj.range_end, 10);
+            const totalCount = parseInt(resultsObj.total_count, 10);
+            const nextRange = totalCount > (endRange + 1) ? endRange + 1 : 0;
+
+            if (resultsObj['data']) {
+              results = resultsObj['data'];
+            } else {
+              results = resultsObj;
+            }
+
+            resolve({ results, totalCount, nextRange });
+          });
+        }
+      })
+      .catch(error => handleError(error, reject));
+  });
+}

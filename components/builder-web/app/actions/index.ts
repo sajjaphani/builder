@@ -251,6 +251,14 @@ export {
   fetchEvents
 } from './events';
 
+export {
+  CLEAR_SAAS_EVENTS,
+  SET_VISIBLE_SAAS_EVENTS,
+  SET_SAAS_EVENTS_TOTAL_COUNT,
+  SET_SAAS_EVENTS_NEXT_RANGE,
+  fetchSaasEvents
+} from './events-saas';
+
 // Used by redux-reset to reset the app state
 export const RESET = 'RESET';
 

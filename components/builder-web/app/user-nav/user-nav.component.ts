@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2017 Chef Software Inc. and/or applicable contributors
+// Copyright (c) 2016-2021 Chef Software Inc. and/or applicable contributors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ export class UserNavComponent {
   @Input() avatarUrl: string;
   @Input() signOut: Function;
   @Input() toggleUserNavMenu: Function;
-  @Input() enabledEvents: boolean;
 
   constructor(private element: ElementRef, private store: AppStore) { }
 

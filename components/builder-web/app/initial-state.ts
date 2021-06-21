@@ -95,7 +95,8 @@ export default Record({
       docker: false
     })(),
     builder: false,
-    events: false
+    events: false,
+    saasEvents: false
   })(),
   notifications: Record({
     all: List(),
@@ -263,6 +264,19 @@ export default Record({
     })()
   })(),
   events: Record({
+    visible: List(),
+    nextRange: 0,
+    perPage: 50,
+    totalCount: 0,
+    ui: Record({
+      visible: Record({
+        errorMessage: undefined,
+        exists: false,
+        loading: true,
+      })(),
+    })(),
+  })(),
+  eventsSaas: Record({
     visible: List(),
     nextRange: 0,
     perPage: 50,

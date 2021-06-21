@@ -1,9 +1,4 @@
 <div class="user-nav-component" >
-  <span class="notif-link" *ngIf="enabledEvents">
-    <a [routerLink]="['/events']">
-      <hab-icon symbol="notifications" class="notifications" title="Builder Events"></hab-icon>
-    </a>
-  </span>
   <ng-container *ngIf="isSignedIn">
     <span>
       <img src="{{ avatarUrl }}" />

@@ -16,11 +16,16 @@ import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 
 import { EventsComponent } from './events/events.component';
+import { EventsSaaSComponent } from './events-saas/events-saas.component';
 
 const routes: Routes = [
   {
     path: 'events',
     component: EventsComponent,
+  },
+  {
+    path: 'events/saas',
+    component: EventsSaaSComponent,
   }
 ];
 

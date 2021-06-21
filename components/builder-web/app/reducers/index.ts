@@ -28,6 +28,7 @@ import session from './sessions';
 import users from './users';
 import ui from './ui';
 import events from './events';
+import eventsSaas from './events-saas';
 
 export default combineReducers({
   app,
@@ -44,5 +45,6 @@ export default combineReducers({
   session,
   ui,
   users,
-  events
+  events,
+  eventsSaas
 });

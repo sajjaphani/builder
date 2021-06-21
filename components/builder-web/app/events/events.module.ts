@@ -17,6 +17,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { EventsComponent } from './events/events.component';
+import { EventsSaaSComponent } from './events-saas/events-saas.component';
 import { EventResultsComponent } from './results/results.component';
 import { EventsRoutingModule } from './events-routing.module';
 import { SharedModule } from '../shared/shared.module';
@@ -31,6 +32,7 @@ import { SharedModule } from '../shared/shared.module';
   ],
   declarations: [
     EventsComponent,
+    EventsSaaSComponent,
     EventResultsComponent
   ]
 })
