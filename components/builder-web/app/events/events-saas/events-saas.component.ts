@@ -19,11 +19,17 @@ import { Subscription } from 'rxjs';
 
 import { AppStore } from '../../app.store';
 import { fetchSaasEvents } from '../../actions/index';
+import { dateFilters } from '../date-filters';
 
 @Component({
   template: require('./events-saas.component.html')
 })
 export class EventsSaaSComponent implements OnInit, OnDestroy {
+  dateFilterChanged: Function;
+
+  public filters: any;
+  public currentFilter: any;
+
   private sub: Subscription;
 
   constructor(
@@ -32,6 +38,14 @@ export class EventsSaaSComponent implements OnInit, OnDestroy {
     private router: Router,
     private title: Title
   ) {
+    this.filters = dateFilters;
+    this.currentFilter = this.filters[0];
+    this.dateFilterChanged = function (item: any) {
+      this.currentFilter = item;
+      this.isOpen = !this.isOpen;
+      this.fetchEvents(0, this.currentFilter.days);
+      return false;
+    }.bind(this);
   }
 
   ngOnInit() {
@@ -45,7 +59,7 @@ export class EventsSaaSComponent implements OnInit, OnDestroy {
     this.sub = this.route.params.subscribe(params => {
       this.title.setTitle(`Events (SaaS) | ${this.store.getState().app.name}`);
 
-      this.fetchEvents();
+      this.fetchEvents(0, this.currentFilter.days);
     });
   }
 
@@ -71,13 +85,13 @@ export class EventsSaaSComponent implements OnInit, OnDestroy {
     return this.store.getState().eventsSaas.ui.visible;
   }
 
-  fetchEvents() {
-    this.store.dispatch(fetchSaasEvents(0));
+  fetchEvents(range, daysLimit) {
+    this.store.dispatch(fetchSaasEvents(range, daysLimit));
   }
 
   fetchMoreEvents() {
     this.store.dispatch(
-      fetchSaasEvents(this.store.getState().eventsSaas.nextRange)
+      fetchSaasEvents(this.store.getState().eventsSaas.nextRange, this.currentFilter.days)
     );
   }
 }

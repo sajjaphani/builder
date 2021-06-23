@@ -19,11 +19,17 @@ import { Subscription } from 'rxjs';
 
 import { AppStore } from '../../app.store';
 import { fetchEvents } from '../../actions/index';
+import { dateFilters } from '../date-filters';
 
 @Component({
   template: require('./events.component.html')
 })
 export class EventsComponent implements OnInit, OnDestroy {
+  dateFilterChanged: Function;
+
+  public filters: any;
+  public currentFilter: any;
+
   private sub: Subscription;
 
   constructor(
@@ -32,6 +38,14 @@ export class EventsComponent implements OnInit, OnDestroy {
     private router: Router,
     private title: Title
   ) {
+    this.filters = dateFilters;
+    this.currentFilter = this.filters[0];
+    this.dateFilterChanged = function (item: any) {
+      this.currentFilter = item;
+      this.isOpen = !this.isOpen;
+      this.fetchEvents(0, this.currentFilter.days);
+      return false;
+    }.bind(this);
   }
 
   ngOnInit() {
@@ -45,7 +59,7 @@ export class EventsComponent implements OnInit, OnDestroy {
     this.sub = this.route.params.subscribe(params => {
       this.title.setTitle(`Events | ${this.store.getState().app.name}`);
 
-      this.fetchEvents();
+      this.fetchEvents(0, this.currentFilter.days);
     });
   }
 
@@ -71,13 +85,13 @@ export class EventsComponent implements OnInit, OnDestroy {
     return this.store.getState().events.ui.visible;
   }
 
-  fetchEvents() {
-    this.store.dispatch(fetchEvents(0));
+  fetchEvents(limit, daysLimit) {
+    this.store.dispatch(fetchEvents(limit, daysLimit));
   }
 
   fetchMoreEvents() {
     this.store.dispatch(
-      fetchEvents(this.store.getState().events.nextRange)
+      fetchEvents(this.store.getState().events.nextRange, this.currentFilter.days)
     );
   }
 }

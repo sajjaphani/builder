@@ -19,7 +19,7 @@ export const SET_VISIBLE_SAAS_EVENTS = 'SET_VISIBLE_SAAS_EVENTS';
 export const SET_SAAS_EVENTS_TOTAL_COUNT = 'SET_SAAS_EVENTS_TOTAL_COUNT';
 export const SET_SAAS_EVENTS_NEXT_RANGE = 'SET_SAAS_EVENTS_NEXT_RANGE';
 
-export function fetchSaasEvents(nextRange: number = 0, daysLimit: number = 7) {
+export function fetchSaasEvents(nextRange: number = 0, daysLimit: number = 0) {
   return dispatch => {
     if (nextRange === 0) {
       dispatch(clearEvents());

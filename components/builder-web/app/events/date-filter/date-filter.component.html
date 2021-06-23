@@ -1,0 +1,16 @@
+<div class="event-filter">
+  <div class="date-filter">
+    <span class="show-label">Show</span>
+    <ng-container>
+      <span class="dropdown-toggle" #toggle>
+        {{ getCurrentFilterLabel() }} <span class="dropdown-caret"></span>
+      </span>
+      <ul class="dropdown" *ngIf="isOpen">
+        <li class="item" *ngFor="let filter of filters">
+          <button (click)="filterChanged(filter)"> {{ filter.label }} </button>
+        </li>
+      </ul>
+    </ng-container>
+  </div>
+  <div class="clearfix"></div>
+</div>

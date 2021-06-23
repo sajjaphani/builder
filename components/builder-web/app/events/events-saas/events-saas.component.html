@@ -5,6 +5,10 @@
   <div class="body">
     <div class="content">
       <section>
+        <hab-events-date-filter [dateFilterChanged]="dateFilterChanged" [filters]="filters"
+          [currentFilter]="currentFilter"></hab-events-date-filter>
+      </section>
+      <section>
         <hab-event-results
           [noEvents]="(!ui.exists || events.size === 0) && !ui.loading"
           [events]="events"
