@@ -1,6 +1,7 @@
 const expect = require('chai').expect;
 const supertest = require('supertest');
 const request = supertest('http://localhost:9636/v1');
+const { appendDateRange } = require('./util');
 
 describe('Channels API', function () {
   describe('Create foo channel', function () {
@@ -63,7 +64,8 @@ describe('Channels API', function () {
     });
 
     it('tests that no new builder events after promotion failed due to auth', function (done) {
-      request.get('/depot/events')
+      const url = appendDateRange('/depot/events');
+      request.get(url)
         .type('application/json')
         .accept('application/json')
         .expect(200)
@@ -86,7 +88,8 @@ describe('Channels API', function () {
     });
 
     it('tests that no new builder events after promotion failed due to origin membership', function (done) {
-      request.get('/depot/events')
+      const url = appendDateRange('/depot/events');
+      request.get(url)
         .type('application/json')
         .accept('application/json')
         .expect(200)
@@ -110,7 +113,8 @@ describe('Channels API', function () {
     });
 
     it('tests builder events after putting a specified package into the specified channel', function (done) {
-      request.get('/depot/events')
+      const url = appendDateRange('/depot/events');
+      request.get(url)
         .type('application/json')
         .accept('application/json')
         .expect(200)
@@ -126,7 +130,8 @@ describe('Channels API', function () {
     });
 
     it('tests builder events after putting a specified package into the specified channel, channel name:foo', function (done) {
-      request.get('/depot/events?channel=foo')
+      const url = appendDateRange('/depot/events');
+      request.get(url + '&channel=foo')
         .type('application/json')
         .accept('application/json')
         .expect(200)
@@ -142,7 +147,8 @@ describe('Channels API', function () {
     });
 
     it('tests builder events after putting a specified package into the specified channel, channel name: stable', function (done) {
-      request.get('/depot/events?channel=stable')
+      const url = appendDateRange('/depot/events');
+      request.get(url + '&channel=stable')
         .type('application/json')
         .accept('application/json')
         .expect(200)
@@ -165,7 +171,8 @@ describe('Channels API', function () {
     });
 
     it('tests builder events that should ignore packages promoted to a channel where the package already exists', function (done) {
-      request.get('/depot/events')
+      const url = appendDateRange('/depot/events');
+      request.get(url)
         .type('application/json')
         .accept('application/json')
         .expect(200)
@@ -191,7 +198,8 @@ describe('Channels API', function () {
     });
 
     it('tests builder events that should not contain events for private packages', function (done) {
-      request.get('/depot/events')
+      const url = appendDateRange('/depot/events');
+      request.get(url)
         .type('application/json')
         .accept('application/json')
         .expect(200)
@@ -207,7 +215,8 @@ describe('Channels API', function () {
     });
 
     it('tests builder events that should contain events for private packages for package owners', function (done) {
-      request.get('/depot/events')
+      const url = appendDateRange('/depot/events');
+      request.get(url)
         .type('application/json')
         .accept('application/json')
         .set('Authorization', global.boboBearer)
