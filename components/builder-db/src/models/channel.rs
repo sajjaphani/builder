@@ -450,7 +450,7 @@ impl AuditPackage {
 
         query =
             query.filter(audit_package::created_at.ge(el.from_date.into_sql::<Timestamptz>().nullable())
-                                                  .and(audit_package::created_at.le(el.to_date.into_sql::<Timestamptz>().nullable())));
+                                                  .and(audit_package::created_at.lt(el.to_date.into_sql::<Timestamptz>().nullable())));
 
         if !el.channel.is_empty() {
             query = query.filter(audit_package::channel.eq(el.channel));
