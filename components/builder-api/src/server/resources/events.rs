@@ -7,7 +7,7 @@ use crate::{db::models::channel::{AuditPackage,
                      framework::headers,
                      helpers::{self,
                                req_state,
-                               LastNDays,
+                               DateRange,
                                Pagination,
                                ToChannel},
                      AppState}};
@@ -38,9 +38,9 @@ impl Events {
 async fn get_events(req: HttpRequest,
                     pagination: Query<Pagination>,
                     channel: Query<ToChannel>,
-                    days: Query<LastNDays>)
+                    date_range: Query<DateRange>)
                     -> HttpResponse {
-    match do_get_events(&req, &pagination, &channel, &days) {
+    match do_get_events(&req, &pagination, &channel, &date_range) {
         Ok((events, count)) => postprocess_event_list(&req, &events, count, &pagination),
         Err(err) => {
             debug!("{}", err);
@@ -53,7 +53,7 @@ async fn get_events(req: HttpRequest,
 async fn get_events_from_saas(req: HttpRequest,
                               pagination: Query<Pagination>,
                               channel: Query<ToChannel>,
-                              days: Query<LastNDays>,
+                              date_range: Query<DateRange>,
                               state: Data<AppState>)
                               -> HttpResponse {
     let bldr_url = &state.config.api.bldr_url;
@@ -79,17 +79,17 @@ async fn get_events_from_saas(req: HttpRequest,
                                             bldr_url,
                                             pagination.range as i64,
                                             &channel.channel,
-                                            days.last_n_days as i64).await;
+                                            date_range).await;
     }
 
     // Request is not from on-prem instance
-    get_events(req, pagination, channel, days).await
+    get_events(req, pagination, channel, date_range).await
 }
 
 fn do_get_events(req: &HttpRequest,
                  pagination: &Query<Pagination>,
                  channel: &Query<ToChannel>,
-                 days: &Query<LastNDays>)
+                 date_range: &Query<DateRange>)
                  -> Result<(Vec<AuditPackageEvent>, i64)> {
     let opt_session_id = match authorize_session(req, None, None) {
         Ok(session) => Some(session.get_id() as i64),
@@ -99,11 +99,12 @@ fn do_get_events(req: &HttpRequest,
 
     let conn = req_state(req).db.get_conn().map_err(Error::DbError)?;
 
-    let el = ListEvents { page:        page as i64,
-                          limit:       per_page as i64,
-                          account_id:  opt_session_id,
-                          channel:     channel.channel.trim().to_string(),
-                          last_n_days: days.last_n_days as i64, };
+    let el = ListEvents { page:       page as i64,
+                          limit:      per_page as i64,
+                          account_id: opt_session_id,
+                          channel:    channel.channel.trim().to_string(),
+                          from_date:  date_range.from_date,
+                          to_date:    date_range.to_date, };
     match AuditPackage::list(el, &*conn).map_err(Error::DieselError) {
         Ok((packages, count)) => {
             let pkg_events: Vec<AuditPackageEvent> =
@@ -161,7 +162,7 @@ async fn get_events_from_saas_builder(map: &HeaderMap,
                                       bldr_url: &str,
                                       range: i64,
                                       channel: &str,
-                                      last_n_days: i64)
+                                      date_range: Query<DateRange>)
                                       -> HttpResponse {
     let mut headers = reqwest::header::HeaderMap::new();
     headers.insert(USER_AGENT_BLDR.0.clone(), USER_AGENT_BLDR.1.clone());
@@ -178,8 +179,11 @@ async fn get_events_from_saas_builder(map: &HeaderMap,
         }
     };
 
-    let url = format!("{}/v1/depot/events?range={}&channel={}&last_n_days={}",
-                      bldr_url, range, channel, last_n_days);
+    // We are expecting dates in YYYY-MM-DD format
+    let from_date = date_range.from_date.date().format("%Y-%m-%d").to_string();
+    let to_date = date_range.to_date.date().format("%Y-%m-%d").to_string();
+    let url = format!("{}/v1/depot/events?range={}&channel={}&from_date={}&to_date={}",
+                      bldr_url, range, channel, from_date, to_date);
     debug!("SaaS Url: {}", url);
     match http_client.get(&url)
                      .send()

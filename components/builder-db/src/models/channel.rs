@@ -394,11 +394,12 @@ pub enum PackageChannelOperation {
 }
 
 pub struct ListEvents {
-    pub account_id:  Option<i64>,
-    pub page:        i64,
-    pub limit:       i64,
-    pub channel:     String,
-    pub last_n_days: i64,
+    pub account_id: Option<i64>,
+    pub page:       i64,
+    pub limit:      i64,
+    pub channel:    String,
+    pub from_date:  NaiveDateTime,
+    pub to_date:    NaiveDateTime,
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, PartialEq)]
@@ -449,11 +450,9 @@ impl AuditPackage {
             query = query.filter(origin_packages::visibility.eq(PackageVisibility::Public));
         }
 
-        if el.last_n_days > 0 {
-            query =
-                query.filter(audit_package::created_at.gt((now.into_sql::<Timestamptz>()
-                                                           - el.last_n_days.days()).nullable()));
-        }
+        query =
+            query.filter(audit_package::created_at.ge(el.from_date)
+                                                  .and(audit_package::created_at.le(el.to_date)));
 
         if !el.channel.is_empty() {
             query = query.filter(audit_package::channel.eq(el.channel));
