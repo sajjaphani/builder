@@ -240,7 +240,7 @@ mod ymd_date_format {
                 Deserialize,
                 Deserializer};
 
-    const FORMAT: &'static str = "%Y-%m-%d";
+    const FORMAT: &str = "%Y-%m-%d";
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<NaiveDateTime, D::Error>
         where D: Deserializer<'de>
