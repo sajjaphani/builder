@@ -19,13 +19,13 @@ export const SET_VISIBLE_EVENTS = 'SET_VISIBLE_EVENTS';
 export const SET_EVENTS_TOTAL_COUNT = 'SET_EVENTS_TOTAL_COUNT';
 export const SET_EVENTS_NEXT_RANGE = 'SET_EVENTS_NEXT_RANGE';
 
-export function fetchEvents(nextRange: number = 0, daysLimit: number = 0) {
+export function fetchEvents(nextRange: number = 0, fromDate: string, toDate: string) {
   return dispatch => {
     if (nextRange === 0) {
       dispatch(clearEvents());
     }
 
-    depotApi.getEvents(nextRange, daysLimit).then(response => {
+    depotApi.getEvents(nextRange, fromDate, toDate).then(response => {
       dispatch(setVisibleEvents(response['results']));
       dispatch(setEventsTotalCount(response['totalCount']));
       dispatch(setEventsNextRange(response['nextRange']));

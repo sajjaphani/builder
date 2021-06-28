@@ -19,13 +19,13 @@ export const SET_VISIBLE_SAAS_EVENTS = 'SET_VISIBLE_SAAS_EVENTS';
 export const SET_SAAS_EVENTS_TOTAL_COUNT = 'SET_SAAS_EVENTS_TOTAL_COUNT';
 export const SET_SAAS_EVENTS_NEXT_RANGE = 'SET_SAAS_EVENTS_NEXT_RANGE';
 
-export function fetchSaasEvents(nextRange: number = 0, daysLimit: number = 0) {
+export function fetchSaasEvents(nextRange: number = 0, fromDate: string, toDate: string) {
   return dispatch => {
     if (nextRange === 0) {
       dispatch(clearEvents());
     }
 
-    depotApi.getSaasEvents(nextRange, daysLimit).then(response => {
+    depotApi.getSaasEvents(nextRange, fromDate, toDate).then(response => {
       dispatch(setVisibleEvents(response['results']));
       dispatch(setEventsTotalCount(response['totalCount']));
       dispatch(setEventsNextRange(response['nextRange']));

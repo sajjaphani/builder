@@ -281,8 +281,8 @@ export function submitJob(origin: string, pkg: string, target: string, token: st
   });
 }
 
-export function getEvents(nextRange: number = 0, daysLimit: number = 0) {
-  let url = `${urlPrefix}/depot/events` + `?range=${nextRange}&channel=stable&last_n_days=${daysLimit}`;
+export function getEvents(nextRange: number = 0, fromDate: string, toDate: string) {
+  let url = `${urlPrefix}/depot/events` + `?range=${nextRange}&channel=stable&from_date=${fromDate}&to_date=${toDate}`;
 
   return new Promise((resolve, reject) => {
     fetch(url, opts())
@@ -312,8 +312,8 @@ export function getEvents(nextRange: number = 0, daysLimit: number = 0) {
   });
 }
 
-export function getSaasEvents(nextRange: number = 0, daysLimit: number = 0) {
-  let url = `${urlPrefix}/depot/events/saas` + `?range=${nextRange}&channel=stable&last_n_days=${daysLimit}`;
+export function getSaasEvents(nextRange: number = 0, fromDate: string, toDate: string) {
+  let url = `${urlPrefix}/depot/events/saas` + `?range=${nextRange}&channel=stable&from_date=${fromDate}&to_date=${toDate}`;
 
   return new Promise((resolve, reject) => {
     fetch(url, opts())
