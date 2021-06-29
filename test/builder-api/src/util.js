@@ -1,7 +1,6 @@
 function getLast1WeekDateRange() {
-    // to_date is exclusive
-    let toDate = new Date();
-    toDate.setDate(toDate.getDate() + 1);
+    // to_date is inclusive
+    const toDate = new Date();
 
     // from_date is inclusive
     let fromDate = new Date();

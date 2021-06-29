@@ -25,7 +25,8 @@ use crate::{bldr_core::metrics::{CounterMetric,
 
 use diesel::{self,
              dsl::{count,
-                   sql},
+                   sql,
+                   IntervalDsl},
              pg::{expression::dsl::any,
                   PgConnection},
              prelude::*,
@@ -448,9 +449,10 @@ impl AuditPackage {
             query = query.filter(origin_packages::visibility.eq(PackageVisibility::Public));
         }
 
+        // to_date is inclusive, add '1' to the to_date so we can easily compare using less than
         query =
             query.filter(audit_package::created_at.ge(el.from_date.into_sql::<Timestamptz>().nullable())
-                                                  .and(audit_package::created_at.lt(el.to_date.into_sql::<Timestamptz>().nullable())));
+                                                  .and(audit_package::created_at.lt((el.to_date.into_sql::<Timestamptz>() + 1.days()).nullable())));
 
         if !el.channel.is_empty() {
             query = query.filter(audit_package::channel.eq(el.channel));
