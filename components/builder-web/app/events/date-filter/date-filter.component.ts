@@ -12,29 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Component, HostListener, ElementRef, ViewChild, Input } from '@angular/core';
+import { Component, Input, ViewChild } from '@angular/core';
+import { MatCalendar } from '@angular/material';
+
+import { getDateRange, toDateString, toDate } from '../date-util';
 
 @Component({
   selector: 'hab-events-date-filter',
   template: require('./date-filter.component.html')
 })
 export class DateFilterComponent {
-  @ViewChild('toggle') toggleElt: ElementRef;
+
+  @ViewChild('fromDateCal') fromDateCal: MatCalendar<Date>;
 
   @Input() dateFilterChanged: Function;
   @Input() currentFilter: any;
   @Input() filters: any;
 
-  public isOpen = false;
+  maxDate: Date;
+  fromSelected: Date | null;
+  toSelected: Date | null;
+
+  public showCalender = false;
 
   constructor() {
-  }
-
-  @HostListener('document:click', ['$event'])
-  toggle(event) {
-    if ((this.isOpen && !event.target.closest('.dropdown')) || (!this.isOpen && this.toggleElt.nativeElement.contains(event.target))) {
-      this.isOpen = !this.isOpen;
-    }
+    this.maxDate = new Date();
   }
 
   getCurrentFilterLabel() {
@@ -42,9 +44,67 @@ export class DateFilterComponent {
   }
 
   filterChanged(item: any) {
-    this.isOpen = !this.isOpen;
     if (this.currentFilter.label === item.label)
       return;
+
     this.dateFilterChanged(item);
+  }
+
+  fromCalender() {
+    this.showCalender = true;
+    const dateRange = getDateRange(this.currentFilter);
+    this.fromSelected = toDate(dateRange.fromDate);
+    this.toSelected = toDate(dateRange.toDate);
+
+    setTimeout(() => {
+      this.fromDateCal.activeDate = this.fromSelected;
+    }, 500);
+  }
+
+  triggerDisabled() {
+    return this.showCalender;
+  }
+
+  closeDateRange() {
+    this.showCalender = false;
+  }
+
+  cancel() {
+    this.closeDateRange();
+  }
+
+  apply() {
+    const fromDateStr = toDateString(this.fromSelected);
+    const toDateStr = toDateString(this.toSelected);
+    const filter = {
+      label: `${fromDateStr} - ${toDateStr}`,
+      type: 'custom',
+      startDate: this.fromSelected,
+      endDate: this.toSelected
+    };
+
+    this.dateFilterChanged(filter);
+    this.closeDateRange();
+  }
+
+  disabledApply() {
+    if (this.fromSelected <= this.toSelected)
+      return false;
+
+    return true;
+  }
+
+  getStartDate() {
+    if (this.fromSelected)
+      return toDateString(this.fromSelected);
+
+    return '';
+  }
+
+  getEndDate() {
+    if (this.toSelected)
+      return toDateString(this.toSelected);
+
+    return '';
   }
 }

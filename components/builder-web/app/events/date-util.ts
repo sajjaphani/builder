@@ -17,6 +17,8 @@ export function getDateRange(filter: any) {
             return getRange('months', filter.interval);
         case 'years':
             return getRange('years', filter.interval);
+        case 'custom':
+            return getCustomRange(filter.startDate, filter.endDate);
         default:
             // Should not happen this
             return getRange('days', 7);
@@ -25,15 +27,32 @@ export function getDateRange(filter: any) {
 
 function getRange(type, interval) {
     const today = new Date();
-    // toDate is exclusive, always one day forward
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
 
     const from_date = moment(today).subtract(interval, type).format('YYYY-MM-DD');
-    const to_date = moment(tomorrow).format('YYYY-MM-DD');
+    const to_date = moment(today).format('YYYY-MM-DD');
 
     return {
         fromDate: from_date,
         toDate: to_date
     };
+}
+
+function getCustomRange(fromDate: Date, toDate: Date) {
+    const from_date = moment(fromDate).format('YYYY-MM-DD');
+    const to_date = moment(toDate).format('YYYY-MM-DD');
+
+    return {
+        fromDate: from_date,
+        toDate: to_date
+    };
+}
+
+// Given a Date object, returns date in YYYY-MM-DD format
+export function toDateString(date: Date) {
+    return moment(date).format('YYYY-MM-DD');
+}
+
+// Given a date in string (YYYY-MM-DD), returns a Date object
+export function toDate(date: string) {
+    return moment(date).toDate();
 }

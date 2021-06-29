@@ -15,6 +15,12 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule, MatRippleModule } from '@angular/material/core';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatButtonModule } from '@angular/material';
 
 import { EventsComponent } from './events/events.component';
 import { EventsSaaSComponent } from './events-saas/events-saas.component';
@@ -28,6 +34,13 @@ import { SharedModule } from '../shared/shared.module';
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatRippleModule,
+    MatDividerModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
     EventsRoutingModule,
     SharedModule
   ],

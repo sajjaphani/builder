@@ -19,7 +19,7 @@ import { Subscription } from 'rxjs';
 
 import { AppStore } from '../../app.store';
 import { fetchSaasEvents } from '../../actions/index';
-import { dateFilters, getDateRange } from '../date-filters';
+import { dateFilters, getDateRange } from '../date-util';
 
 @Component({
   template: require('./events-saas.component.html')
