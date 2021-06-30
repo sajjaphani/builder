@@ -21,7 +21,6 @@ use actix_web::{http::{self,
                 HttpResponse};
 use builder_core::http_client::{HttpClient,
                                 USER_AGENT_BLDR};
-use url::Url;
 
 pub struct Events {}
 
@@ -57,33 +56,12 @@ async fn get_events_from_saas(req: HttpRequest,
                               state: Data<AppState>)
                               -> HttpResponse {
     let bldr_url = &state.config.api.saas_bldr_url;
-    let bldr_host = match Url::parse(bldr_url) {
-        Ok(parsed_url) => {
-            match parsed_url.host_str() {
-                Some(host) => host.to_string(),
-                None => {
-                    error!("Failed to extract host from builder url");
-                    return HttpResponse::InternalServerError().body("Failed to get bldr url".to_string());
-                }
-            }
-        }
-        Err(err) => {
-            error!("Builder url parse error: {:?}", err);
-            return HttpResponse::InternalServerError().body("Failed to get bldr url".to_string());
-        }
-    };
-
     let headers = req.headers();
-    if check_request_is_from_on_prem(headers, &bldr_host) {
-        return get_events_from_saas_builder(headers,
-                                            bldr_url,
-                                            pagination.range as i64,
-                                            &channel.channel,
-                                            date_range).await;
-    }
-
-    // Request is not from on-prem instance
-    get_events(req, pagination, channel, date_range).await
+    return get_events_from_saas_builder(headers,
+                                        bldr_url,
+                                        pagination.range as i64,
+                                        &channel.channel,
+                                        date_range).await;
 }
 
 fn do_get_events(req: &HttpRequest,
@@ -143,18 +121,6 @@ pub fn postprocess_event_list(_req: &HttpRequest,
     response.header(http::header::CONTENT_TYPE, headers::APPLICATION_JSON)
             .header(http::header::CACHE_CONTROL, headers::NO_CACHE)
             .body(body)
-}
-
-fn check_request_is_from_on_prem(headers: &HeaderMap, bldr_host: &str) -> bool {
-    if let Some(ref referer) = headers.get(http::header::HOST) {
-        if let Ok(s) = referer.to_str() {
-            if s.contains(bldr_host) {
-                return false;
-            }
-        }
-    }
-
-    true
 }
 
 // Invoke the REST API on the SaaS builder
