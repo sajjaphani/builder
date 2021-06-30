@@ -43,7 +43,7 @@ async fn get_events(req: HttpRequest,
     match do_get_events(&req, &pagination, &channel, &date_range) {
         Ok((events, count)) => postprocess_event_list(&req, &events, count, &pagination),
         Err(err) => {
-            debug!("{}", err);
+            error!("{}", err);
             err.into()
         }
     }
@@ -56,19 +56,19 @@ async fn get_events_from_saas(req: HttpRequest,
                               date_range: Query<DateRange>,
                               state: Data<AppState>)
                               -> HttpResponse {
-    let bldr_url = &state.config.api.bldr_url;
+    let bldr_url = &state.config.api.saas_bldr_url;
     let bldr_host = match Url::parse(bldr_url) {
         Ok(parsed_url) => {
             match parsed_url.host_str() {
                 Some(host) => host.to_string(),
                 None => {
-                    debug!("Failed to extract host from builder url");
+                    error!("Failed to extract host from builder url");
                     return HttpResponse::InternalServerError().body("Failed to get bldr url".to_string());
                 }
             }
         }
         Err(err) => {
-            debug!("Builder url parse error: {:?}", err);
+            error!("Builder url parse error: {:?}", err);
             return HttpResponse::InternalServerError().body("Failed to get bldr url".to_string());
         }
     };
