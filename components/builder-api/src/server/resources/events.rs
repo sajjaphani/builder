@@ -11,8 +11,7 @@ use crate::{db::models::channel::{AuditPackage,
                                Pagination,
                                ToChannel},
                      AppState}};
-use actix_web::{http::{self,
-                       HeaderMap},
+use actix_web::{http,
                 web::{self,
                       Data,
                       Query,
@@ -56,12 +55,56 @@ async fn get_events_from_saas(req: HttpRequest,
                               state: Data<AppState>)
                               -> HttpResponse {
     let bldr_url = &state.config.api.saas_bldr_url;
-    let headers = req.headers();
-    return get_events_from_saas_builder(headers,
-                                        bldr_url,
-                                        pagination.range as i64,
-                                        &channel.channel,
-                                        date_range).await;
+
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert(USER_AGENT_BLDR.0.clone(), USER_AGENT_BLDR.1.clone());
+    if req.headers().contains_key(http::header::AUTHORIZATION) {
+        headers.insert(http::header::AUTHORIZATION,
+                       req.headers()
+                          .get(http::header::AUTHORIZATION)
+                          .unwrap()
+                          .clone());
+    }
+
+    let http_client = match HttpClient::new(bldr_url, headers) {
+        Ok(client) => client,
+        Err(err) => {
+            debug!("HttpClient Error: {:?}", err);
+            return HttpResponse::InternalServerError().body(err.to_string());
+        }
+    };
+
+    // We are expecting dates in YYYY-MM-DD format
+    let from_date = date_range.from_date.date().format("%Y-%m-%d").to_string();
+    let to_date = date_range.to_date.date().format("%Y-%m-%d").to_string();
+    let url = format!("{}/v1/depot/events?range={}&channel={}&from_date={}&to_date={}",
+                      bldr_url, pagination.range, channel.channel, from_date, to_date);
+    debug!("SaaS Url: {}", url);
+    match http_client.get(&url)
+                     .send()
+                     .await
+                     .map_err(Error::HttpClient)
+    {
+        Ok(response) => {
+            match response.text().await {
+                Ok(body) => {
+                    let mut http_response = HttpResponse::Ok();
+
+                    http_response.header(http::header::CONTENT_TYPE, headers::APPLICATION_JSON)
+                                 .header(http::header::CACHE_CONTROL, headers::NO_CACHE)
+                                 .body(body)
+                }
+                Err(err) => {
+                    debug!("Error getting response text: {:?}", err);
+                    HttpResponse::InternalServerError().body(err.to_string())
+                }
+            }
+        }
+        Err(err) => {
+            debug!("Error sending request: {:?}", err);
+            HttpResponse::InternalServerError().body(err.to_string())
+        }
+    }
 }
 
 fn do_get_events(req: &HttpRequest,
@@ -121,59 +164,4 @@ pub fn postprocess_event_list(_req: &HttpRequest,
     response.header(http::header::CONTENT_TYPE, headers::APPLICATION_JSON)
             .header(http::header::CACHE_CONTROL, headers::NO_CACHE)
             .body(body)
-}
-
-// Invoke the REST API on the SaaS builder
-async fn get_events_from_saas_builder(map: &HeaderMap,
-                                      bldr_url: &str,
-                                      range: i64,
-                                      channel: &str,
-                                      date_range: Query<DateRange>)
-                                      -> HttpResponse {
-    let mut headers = reqwest::header::HeaderMap::new();
-    headers.insert(USER_AGENT_BLDR.0.clone(), USER_AGENT_BLDR.1.clone());
-    if map.contains_key(http::header::AUTHORIZATION) {
-        headers.insert(http::header::AUTHORIZATION,
-                       map.get(http::header::AUTHORIZATION).unwrap().clone());
-    }
-
-    let http_client = match HttpClient::new(bldr_url, headers) {
-        Ok(client) => client,
-        Err(err) => {
-            debug!("HttpClient Error: {:?}", err);
-            return HttpResponse::InternalServerError().body(err.to_string());
-        }
-    };
-
-    // We are expecting dates in YYYY-MM-DD format
-    let from_date = date_range.from_date.date().format("%Y-%m-%d").to_string();
-    let to_date = date_range.to_date.date().format("%Y-%m-%d").to_string();
-    let url = format!("{}/v1/depot/events?range={}&channel={}&from_date={}&to_date={}",
-                      bldr_url, range, channel, from_date, to_date);
-    debug!("SaaS Url: {}", url);
-    match http_client.get(&url)
-                     .send()
-                     .await
-                     .map_err(Error::HttpClient)
-    {
-        Ok(response) => {
-            match response.text().await {
-                Ok(body) => {
-                    let mut http_response = HttpResponse::Ok();
-
-                    http_response.header(http::header::CONTENT_TYPE, headers::APPLICATION_JSON)
-                                 .header(http::header::CACHE_CONTROL, headers::NO_CACHE)
-                                 .body(body)
-                }
-                Err(err) => {
-                    debug!("Error getting response text: {:?}", err);
-                    HttpResponse::InternalServerError().body(err.to_string())
-                }
-            }
-        }
-        Err(err) => {
-            debug!("Error sending request: {:?}", err);
-            HttpResponse::InternalServerError().body(err.to_string())
-        }
-    }
 }
