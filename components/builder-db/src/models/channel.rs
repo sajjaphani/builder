@@ -471,13 +471,13 @@ impl AuditPackage {
     }
 }
 
-impl Into<AuditPackageEvent> for AuditPackage {
-    fn into(self) -> AuditPackageEvent {
-        AuditPackageEvent { operation:     self.operation,
-                            created_at:    self.created_at,
-                            origin:        self.origin.clone(),
-                            channel:       self.channel.clone(),
-                            package_ident: self.package_ident, }
+impl From<AuditPackage> for AuditPackageEvent {
+    fn from(value: AuditPackage) -> AuditPackageEvent {
+        AuditPackageEvent { operation:     value.operation,
+                            created_at:    value.created_at,
+                            origin:        value.origin.clone(),
+                            channel:       value.channel.clone(),
+                            package_ident: value.package_ident, }
     }
 }
 
