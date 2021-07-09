@@ -39,6 +39,8 @@ use diesel::{self,
              RunQueryDsl,
              Table,
              TextExpressionMethods};
+use diesel_full_text_search::{to_tsquery,
+                              TsQueryExtensions};
 
 #[derive(AsExpression, Debug, Serialize, Deserialize, Queryable)]
 pub struct Channel {
@@ -399,6 +401,7 @@ pub struct ListEvents {
     pub channel:    String,
     pub from_date:  NaiveDateTime,
     pub to_date:    NaiveDateTime,
+    pub query:      String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Queryable, PartialEq)]
@@ -434,6 +437,10 @@ impl AuditPackage {
             .select(audit_package::all_columns)
             .distinct_on((audit_package::package_ident, audit_package::created_at))
             .into_boxed();
+
+        if !el.query.is_empty() {
+            query = query.filter(to_tsquery(format!("{}:*", el.query)).matches(origin_packages::ident_vector));
+        }
 
         if let Some(session_id) = el.account_id {
             let origins = origin_members::table.select(origin_members::origin)

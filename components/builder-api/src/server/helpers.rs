@@ -31,6 +31,12 @@ pub struct Pagination {
     pub distinct: bool,
 }
 
+#[derive(Deserialize)]
+pub struct SearchQuery {
+    #[serde(default)]
+    pub query: String,
+}
+
 #[derive(Serialize)]
 pub struct PaginatedResults<'a, T: 'a> {
     range_start: isize,

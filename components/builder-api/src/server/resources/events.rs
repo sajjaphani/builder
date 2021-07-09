@@ -9,6 +9,7 @@ use crate::{db::models::channel::{AuditPackage,
                                req_state,
                                DateRange,
                                Pagination,
+                               SearchQuery,
                                ToChannel},
                      AppState}};
 use actix_web::{http,
@@ -36,9 +37,10 @@ impl Events {
 async fn get_events(req: HttpRequest,
                     pagination: Query<Pagination>,
                     channel: Query<ToChannel>,
-                    date_range: Query<DateRange>)
+                    date_range: Query<DateRange>,
+                    search_query: Query<SearchQuery>)
                     -> HttpResponse {
-    match do_get_events(&req, &pagination, &channel, &date_range) {
+    match do_get_events(&req, &pagination, &channel, &date_range, &search_query) {
         Ok((events, count)) => postprocess_event_list(&req, &events, count, &pagination),
         Err(err) => {
             error!("{}", err);
@@ -52,6 +54,7 @@ async fn get_events_from_saas(req: HttpRequest,
                               pagination: Query<Pagination>,
                               channel: Query<ToChannel>,
                               date_range: Query<DateRange>,
+                              search_query: Query<SearchQuery>,
                               state: Data<AppState>)
                               -> HttpResponse {
     let bldr_url = &state.config.api.saas_bldr_url;
@@ -77,8 +80,13 @@ async fn get_events_from_saas(req: HttpRequest,
     // We are expecting dates in YYYY-MM-DD format
     let from_date = date_range.from_date.date().format("%Y-%m-%d").to_string();
     let to_date = date_range.to_date.date().format("%Y-%m-%d").to_string();
-    let url = format!("{}/v1/depot/events?range={}&channel={}&from_date={}&to_date={}",
-                      bldr_url, pagination.range, channel.channel, from_date, to_date);
+    let url = format!("{}/v1/depot/events?range={}&channel={}&from_date={}&to_date={}&query={}",
+                      bldr_url,
+                      pagination.range,
+                      channel.channel,
+                      from_date,
+                      to_date,
+                      search_query.query);
     debug!("SaaS Url: {}", url);
     match http_client.get(&url)
                      .send()
@@ -110,7 +118,8 @@ async fn get_events_from_saas(req: HttpRequest,
 fn do_get_events(req: &HttpRequest,
                  pagination: &Query<Pagination>,
                  channel: &Query<ToChannel>,
-                 date_range: &Query<DateRange>)
+                 date_range: &Query<DateRange>,
+                 search_query: &Query<SearchQuery>)
                  -> Result<(Vec<AuditPackageEvent>, i64)> {
     let opt_session_id = match authorize_session(req, None, None) {
         Ok(session) => Some(session.get_id() as i64),
@@ -119,13 +128,27 @@ fn do_get_events(req: &HttpRequest,
     let (page, per_page) = helpers::extract_pagination_in_pages(pagination);
 
     let conn = req_state(req).db.get_conn().map_err(Error::DbError)?;
+    let decoded_query =
+        match percent_encoding::percent_decode(search_query.query.as_bytes()).decode_utf8() {
+            Ok(q) => {
+                q.to_string()
+                 .trim_end_matches('/')
+                 .replace("/", " & ")
+                 .to_owned()
+            }
+            Err(err) => {
+                error!("{}", err);
+                return Err(Error::Unprocessable);
+            }
+        };
 
     let el = ListEvents { page:       page as i64,
                           limit:      per_page as i64,
                           account_id: opt_session_id,
                           channel:    channel.channel.trim().to_string(),
                           from_date:  date_range.from_date,
-                          to_date:    date_range.to_date, };
+                          to_date:    date_range.to_date,
+                          query:      decoded_query, };
     match AuditPackage::list(el, &*conn).map_err(Error::DieselError) {
         Ok((packages, count)) => {
             let pkg_events: Vec<AuditPackageEvent> =
