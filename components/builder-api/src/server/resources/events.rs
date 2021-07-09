@@ -134,7 +134,6 @@ fn do_get_events(req: &HttpRequest,
                 q.to_string()
                  .trim_end_matches('/')
                  .replace("/", " & ")
-                 .to_owned()
             }
             Err(err) => {
                 error!("{}", err);
