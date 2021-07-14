@@ -1,10 +1,17 @@
 <div class="events-component">
   <header>
     <h1>Builder Events (SaaS)</h1>
+    <h2 *ngIf="searchQuery">Search Results</h2>
   </header>
   <div class="body">
     <div class="content">
-      <section>
+      <section class="events-filter">
+        <input
+        type="search"
+        #query autofocus
+        [formControl]="searchBox"
+        [value]="searchQuery"
+        placeholder="Search Events&hellip;">
         <hab-events-date-filter [dateFilterChanged]="dateFilterChanged" [filters]="filters"
           [currentFilter]="currentFilter"></hab-events-date-filter>
       </section>

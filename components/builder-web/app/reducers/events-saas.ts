@@ -33,6 +33,9 @@ export default function eventsSaas(state = initialState['eventsSaas'], action) {
     case actionTypes.SET_SAAS_EVENTS_TOTAL_COUNT:
       return state.set('totalCount', action.payload);
 
+    case actionTypes.SET_SAAS_EVENTS_SEARCH_QUERY:
+      return state.set('searchQuery', action.payload);
+
     case actionTypes.SET_VISIBLE_SAAS_EVENTS:
       if (action.error) {
         return state.set('visible', List()).

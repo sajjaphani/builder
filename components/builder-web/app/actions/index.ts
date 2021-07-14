@@ -248,6 +248,7 @@ export {
   SET_VISIBLE_EVENTS,
   SET_EVENTS_TOTAL_COUNT,
   SET_EVENTS_NEXT_RANGE,
+  SET_EVENTS_SEARCH_QUERY,
   fetchEvents
 } from './events';
 
@@ -256,6 +257,7 @@ export {
   SET_VISIBLE_SAAS_EVENTS,
   SET_SAAS_EVENTS_TOTAL_COUNT,
   SET_SAAS_EVENTS_NEXT_RANGE,
+  SET_SAAS_EVENTS_SEARCH_QUERY,
   fetchSaasEvents
 } from './events-saas';
 

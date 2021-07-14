@@ -19,17 +19,21 @@
       width: 100%;
       min-width: 100%;
       padding-right: 0;
+
+      .events-filter {
+        display: flex;
+        justify-content: space-between;
+        flex-direction: row;
+
+        > input {
+          max-width: 65%;
+        }
+      }
     }
   }
 
   header {
     position: relative;
-  }
-
-  hab-icon[symbol="notifications"] {
-      position: absolute;
-      right: $default-margin;
-      bottom: $default-margin;
   }
 
   .more {

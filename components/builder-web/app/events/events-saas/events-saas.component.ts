@@ -15,17 +15,22 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
+import { FormControl } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { AppStore } from '../../app.store';
 import { fetchSaasEvents } from '../../actions/index';
 import { dateFilters, getDateRange } from '../date-util';
+import { setSaasEventsSearchQuery } from '../../actions/events-saas';
 
 @Component({
   template: require('./events-saas.component.html')
 })
 export class EventsSaaSComponent implements OnInit, OnDestroy {
   dateFilterChanged: Function;
+  query: string = '';
+  searchBox: FormControl;
 
   public filters: any;
   public currentFilter: any;
@@ -39,6 +44,7 @@ export class EventsSaaSComponent implements OnInit, OnDestroy {
     private router: Router,
     private title: Title
   ) {
+    this.searchBox = new FormControl(this.searchQuery);
     this.filters = dateFilters;
     this.currentFilter = this.filters[0];
     this.dateFilterChanged = function (item: any) {
@@ -62,6 +68,17 @@ export class EventsSaaSComponent implements OnInit, OnDestroy {
 
       this.fetchEvents(0);
     });
+
+    this.searchBox.valueChanges
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged()
+      )
+      .subscribe(query => {
+        this.query = query;
+        this.store.dispatch(setSaasEventsSearchQuery(query));
+        this.fetchEvents(0);
+      });
   }
 
   ngOnDestroy() {
@@ -86,14 +103,18 @@ export class EventsSaaSComponent implements OnInit, OnDestroy {
     return this.store.getState().eventsSaas.ui.visible;
   }
 
+  get searchQuery() {
+    return this.store.getState().eventsSaas.searchQuery;
+  }
+
   fetchEvents(range) {
     this.dateRange = getDateRange(this.currentFilter);
-    this.store.dispatch(fetchSaasEvents(range, this.dateRange.fromDate, this.dateRange.toDate));
+    this.store.dispatch(fetchSaasEvents(range, this.dateRange.fromDate, this.dateRange.toDate, this.query));
   }
 
   fetchMoreEvents() {
     this.store.dispatch(
-      fetchSaasEvents(this.store.getState().eventsSaas.nextRange, this.dateRange.fromDate, this.dateRange.toDate)
+      fetchSaasEvents(this.store.getState().eventsSaas.nextRange, this.dateRange.fromDate, this.dateRange.toDate, this.query)
     );
   }
 }

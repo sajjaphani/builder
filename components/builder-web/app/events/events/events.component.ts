@@ -15,17 +15,22 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
+import { FormControl } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 import { AppStore } from '../../app.store';
 import { fetchEvents } from '../../actions/index';
 import { dateFilters, getDateRange } from '../date-util';
+import { setEventsSearchQuery } from '../../actions/events';
 
 @Component({
   template: require('./events.component.html')
 })
 export class EventsComponent implements OnInit, OnDestroy {
   dateFilterChanged: Function;
+  query: string = '';
+  searchBox: FormControl;
 
   public filters: any;
   public currentFilter: any;
@@ -39,6 +44,7 @@ export class EventsComponent implements OnInit, OnDestroy {
     private router: Router,
     private title: Title
   ) {
+    this.searchBox = new FormControl(this.searchQuery);
     this.filters = dateFilters;
     this.currentFilter = this.filters[0];
     this.dateFilterChanged = function (item: any) {
@@ -62,6 +68,17 @@ export class EventsComponent implements OnInit, OnDestroy {
 
       this.fetchEvents(0);
     });
+
+    this.searchBox.valueChanges
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged()
+      )
+      .subscribe(query => {
+        this.query = query;
+        this.store.dispatch(setEventsSearchQuery(query));
+        this.fetchEvents(0);
+      });
   }
 
   ngOnDestroy() {
@@ -86,14 +103,18 @@ export class EventsComponent implements OnInit, OnDestroy {
     return this.store.getState().events.ui.visible;
   }
 
+  get searchQuery() {
+    return this.store.getState().events.searchQuery;
+  }
+
   fetchEvents(limit) {
     this.dateRange = getDateRange(this.currentFilter);
-    this.store.dispatch(fetchEvents(limit, this.dateRange.fromDate, this.dateRange.toDate));
+    this.store.dispatch(fetchEvents(limit, this.dateRange.fromDate, this.dateRange.toDate, this.query));
   }
 
   fetchMoreEvents() {
     this.store.dispatch(
-      fetchEvents(this.store.getState().events.nextRange, this.dateRange.fromDate, this.dateRange.toDate)
+      fetchEvents(this.store.getState().events.nextRange, this.dateRange.fromDate, this.dateRange.toDate, this.query)
     );
   }
 }

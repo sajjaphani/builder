@@ -268,6 +268,7 @@ export default Record({
     nextRange: 0,
     perPage: 50,
     totalCount: 0,
+    searchQuery: '',
     ui: Record({
       visible: Record({
         errorMessage: undefined,
@@ -281,6 +282,7 @@ export default Record({
     nextRange: 0,
     perPage: 50,
     totalCount: 0,
+    searchQuery: '',
     ui: Record({
       visible: Record({
         errorMessage: undefined,
